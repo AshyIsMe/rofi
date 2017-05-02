@@ -484,7 +484,7 @@ mode_test_SOURCES=\
 				  include/mode-private.h
 endif
 
-TESTS=\
+TESTS+=\
 	history_test\
 	helper_test\
 	helper_expand\

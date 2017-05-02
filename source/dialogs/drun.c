@@ -453,14 +453,14 @@ static gpointer drun_icon_fetch ( gpointer data )
             continue;
         }
         else
-            g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Found Icon %s(%d): %s", dr->icon_name, dr->icon_size, icon_path );
+            g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Found Icon %s(%d): %s", dr->icon_name, dr->icon_size, icon_path );
 
         if ( g_str_has_suffix ( icon_path, ".png" ) )
             dr->icon = cairo_image_surface_create_from_png(icon_path);
         else if ( g_str_has_suffix ( icon_path, ".svg" ) )
             dr->icon = cairo_image_surface_create_from_svg(icon_path, dr->icon_size);
         else {
-            g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Icon type not yet supported: %s", icon_path );
+            g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Icon type not yet supported: %s", icon_path );
             char *r = dr->icon_name;
             dr->icon_name = NULL;
             g_free(r);
