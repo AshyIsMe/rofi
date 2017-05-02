@@ -122,6 +122,12 @@ PKG_CHECK_MODULES([cairo],	  [cairo cairo-xcb])
 PKG_CHECK_MODULES([libsn],    [libstartup-notification-1.0 ])
 PKG_CHECK_MODULES([librsvg],    [librsvg-2.0 ])
 
+AC_ARG_ENABLE([check], AS_HELP_STRING([--disable-check], [Build with checks using check library (default: enabled)]))
+
+AS_IF([test "x${enable_check}" != "xno"], [ PKG_CHECK_MODULES([check],[check >= 0.11.0], [HAVE_CHECK=1]) ])
+AM_CONDITIONAL([USE_CHECK],  [test "x${enable_check}" != "xno" && test "$HAVE_CHECK" -eq 1])
+
+
 
 dnl ---------------------------------------------------------------------
 dnl Add extra compiler flags
@@ -157,6 +163,11 @@ if test x$enable_gcov = xyes; then
 echo "Code Coverage                Enabled"
 else
 echo "Code Coverage                Disabled"
+fi
+if test "x${enable_check}" != "xno" && test "$HAVE_CHECK" -eq 1; then
+echo "Check based tests            Enabled"
+else
+echo "Check based tests            Disabled"
 fi
 echo "-------------------------------------"
 echo "Now type 'make' to build"

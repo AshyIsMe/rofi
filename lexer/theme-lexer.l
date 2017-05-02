@@ -1,3 +1,30 @@
+/*
+ * rofi
+ *
+ * MIT/X11 License
+ * Copyright 2013-2017 Qball Cow <qball@gmpclient.org>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 %option nodefault noyywrap
 %option nostdinit
 %option nounput
@@ -342,8 +369,8 @@ if ( queue == NULL ){
     return T_PIXEL;
 }
 <PROPERTIES>{REAL}{EM}{WHITESPACE}{LS_DASH} {
-    yylval->distance.distance = (double)g_ascii_strtoll(yytext, NULL, 10);
-    yylval->distance.type     = PW_PX;
+    yylval->distance.distance = (double)g_ascii_strtod(yytext, NULL);
+    yylval->distance.type     = PW_EM;
     yylval->distance.style    = DASH;
     return T_PIXEL;
 }
@@ -354,8 +381,8 @@ if ( queue == NULL ){
     return T_PIXEL;
 }
 <PROPERTIES>{REAL}{EM}{WHITESPACE}{LS_SOLID} {
-    yylval->distance.distance = (double)g_ascii_strtoll(yytext, NULL, 10);
-    yylval->distance.type     = PW_PX;
+    yylval->distance.distance = (double)g_ascii_strtod(yytext, NULL);
+    yylval->distance.type     = PW_EM;
     yylval->distance.style    = SOLID;
     return T_PIXEL;
 }
@@ -399,24 +426,24 @@ if ( queue == NULL ){
     union {  uint16_t val; struct { unsigned char b:4,g:4,r:4,a :4;};} val;
     val.val = (uint16_t )g_ascii_strtoull ( &yytext[1], NULL, 16);
     yylval->colorval.alpha = 1.0;
-    yylval->colorval.red   = val.r/16.0;
-    yylval->colorval.green = val.g/16.0;
-    yylval->colorval.blue  = val.b/16.0;
+    yylval->colorval.red   = val.r/15.0;
+    yylval->colorval.green = val.g/15.0;
+    yylval->colorval.blue  = val.b/15.0;
     return T_COLOR;
 }
 <PROPERTIES>rgba\({NUMBER}{1,3},{NUMBER}{1,3},{NUMBER}{1,3},[01](\.{NUMBER}+)?\) {
     char *endptr = &yytext[5];
-    yylval->colorval.red = g_ascii_strtoull ( endptr, &endptr, 10);
-    yylval->colorval.green= g_ascii_strtoull ( endptr+1, &endptr, 10);
-    yylval->colorval.blue= g_ascii_strtoull ( endptr+1, &endptr, 10);
+    yylval->colorval.red = g_ascii_strtoull ( endptr, &endptr, 10)/255.0;
+    yylval->colorval.green= g_ascii_strtoull ( endptr+1, &endptr, 10)/255.0;
+    yylval->colorval.blue= g_ascii_strtoull ( endptr+1, &endptr, 10)/255.0;
     yylval->colorval.alpha= g_ascii_strtod ( endptr+1, NULL);
     return T_COLOR;
 }
 <PROPERTIES>rgb\({NUMBER}{1,3},{NUMBER}{1,3},{NUMBER}{1,3}\) {
     char *endptr = &yytext[4];
-    yylval->colorval.red   = g_ascii_strtoull ( endptr, &endptr, 10);
-    yylval->colorval.green = g_ascii_strtoull ( endptr+1, &endptr, 10);
-    yylval->colorval.blue  = g_ascii_strtoull ( endptr+1, &endptr, 10);
+    yylval->colorval.red   = g_ascii_strtoull ( endptr, &endptr, 10)/255.0;
+    yylval->colorval.green = g_ascii_strtoull ( endptr+1, &endptr, 10)/255.0;
+    yylval->colorval.blue  = g_ascii_strtoull ( endptr+1, &endptr, 10)/255.0;
     yylval->colorval.alpha = 1.0;
     return T_COLOR;
 }
@@ -547,11 +574,14 @@ static char * rofi_theme_parse_prepare_file ( const char *file, const char *pare
 }
 gboolean rofi_theme_parse_file ( const char *file )
 {
-    char *filename = rofi_theme_parse_prepare_file ( file, NULL );
+    char *file2 = helper_get_theme_path ( file );
+    char *filename = rofi_theme_parse_prepare_file ( file2, NULL );
+    g_free ( file2 );
+
     yyin = fopen ( filename, "rb" );
     if ( yyin == NULL ) {
         char *str = g_markup_printf_escaped ( "Failed to open theme: <i>%s</i>\nError: <b>%s</b>",
-                                              filename, strerror ( errno ) );
+                filename, strerror ( errno ) );
         rofi_add_error_message ( g_string_new ( str ) );
         g_free ( str );
         g_free ( filename );

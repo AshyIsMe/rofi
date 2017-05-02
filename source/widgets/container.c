@@ -1,8 +1,8 @@
-/**
+/*
  * rofi
  *
  * MIT/X11 License
- * Modified 2016-2017 Qball Cow <qball@gmpclient.org>
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,7 +22,10 @@
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
  */
+
+#define G_LOG_DOMAIN    "Widgets.Window"
 
 #include <config.h>
 #include <stdio.h>
@@ -30,8 +33,6 @@
 #include "widgets/widget-internal.h"
 #include "widgets/container.h"
 #include "theme.h"
-
-#define LOG_DOMAIN    "Widgets.Window"
 
 struct _window
 {
@@ -122,7 +123,7 @@ container * container_create ( const char *name )
     b->widget.clicked            = container_clicked;
     b->widget.motion_notify      = container_motion_notify;
     b->widget.get_desired_height = container_get_desired_height;
-    b->widget.enabled            = TRUE;
+    b->widget.enabled            = rofi_theme_get_boolean ( WIDGET ( b ), "enabled", TRUE );
     return b;
 }
 

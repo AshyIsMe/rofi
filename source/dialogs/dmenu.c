@@ -1,8 +1,8 @@
-/**
+/*
  * rofi
  *
  * MIT/X11 License
- * Copyright 2013-2017 Qball Cow <qball@gmpclient.org>
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -25,6 +25,8 @@
  *
  */
 
+#define G_LOG_DOMAIN    "Dialogs.DMenu"
+
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,8 +48,6 @@
 #include "helper.h"
 #include "xrmoptions.h"
 #include "view.h"
-
-#define LOG_DOMAIN    "Dialogs.DMenu"
 
 struct range_pair
 {
@@ -105,7 +105,7 @@ typedef struct
 static void async_close_callback ( GObject *source_object, GAsyncResult *res, G_GNUC_UNUSED gpointer user_data )
 {
     g_input_stream_close_finish ( G_INPUT_STREAM ( source_object ), res, NULL );
-    g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Closing data stream." );
+    g_debug ( "Closing data stream." );
 }
 
 static void read_add ( DmenuModePrivateData * pd, char *data, gsize len )
@@ -157,7 +157,7 @@ static void async_read_callback ( GObject *source_object, GAsyncResult *res, gpo
     }
     if ( !g_cancellable_is_cancelled ( pd->cancel ) ) {
         // Hack, don't use get active.
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Clearing overlay" );
+        g_debug ( "Clearing overlay" );
         rofi_view_set_overlay ( rofi_view_get_active (), NULL );
         g_input_stream_close_async ( G_INPUT_STREAM ( stream ), G_PRIORITY_LOW, pd->cancel, async_close_callback, pd );
     }
@@ -165,7 +165,7 @@ static void async_read_callback ( GObject *source_object, GAsyncResult *res, gpo
 
 static void async_read_cancel ( G_GNUC_UNUSED GCancellable *cancel, G_GNUC_UNUSED gpointer data )
 {
-    g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Cancelled the async read." );
+    g_debug ( "Cancelled the async read." );
 }
 
 static int get_dmenu_async ( DmenuModePrivateData *pd, int sync_pre_read )
@@ -443,7 +443,7 @@ static int dmenu_mode_init ( Mode *sw )
         char *estr = rofi_expand_path ( str );
         fd = open ( str, O_RDONLY );
         if ( fd < 0 ) {
-            char *msg = g_markup_printf_escaped ( "Failed to open file: <b>%s</b>:\n\t<i>%s</i>", estr, strerror ( errno ) );
+            char *msg = g_markup_printf_escaped ( "Failed to open file: <b>%s</b>:\n\t<i>%s</i>", estr, g_strerror ( errno ) );
             rofi_view_error_dialog ( msg, TRUE );
             g_free ( msg );
             g_free ( estr );

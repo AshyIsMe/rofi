@@ -1,3 +1,30 @@
+/*
+ * rofi
+ *
+ * MIT/X11 License
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #ifndef THEME_H
 #define THEME_H
 #include <glib.h>
@@ -88,7 +115,6 @@ typedef enum
     /** Highlight */
     P_HIGHLIGHT,
 } PropertyType;
-
 
 /**
  * Represent the color in theme.
@@ -217,11 +243,11 @@ Property *rofi_theme_property_create ( PropertyType type );
 void rofi_theme_property_free ( Property *p );
 
 /**
- * @param wid
+ * @param widget
  *
  * Free the widget and alll children.
  */
-void rofi_theme_free ( ThemeWidget *wid );
+void rofi_theme_free ( ThemeWidget *widget );
 
 /**
  * @param file filename to parse.
@@ -317,7 +343,7 @@ int rofi_theme_get_boolean   (  const widget *widget, const char *property, int 
  *
  * @returns The string value of this property for this widget.
  */
-char *rofi_theme_get_string  (  const widget *widget, const char *property, char *def );
+const char *rofi_theme_get_string  (  const widget *widget, const char *property, char *def );
 
 /**
  * @param widget   The widget to query
@@ -416,5 +442,12 @@ gboolean rofi_theme_is_empty ( void );
  * Convert old theme colors into default one.
  */
 void rofi_theme_convert_old ( void );
+
+/**
+ * @param file File name passed to option.
+ *
+ * @returns path to theme or copy of filename if not found.
+ */
+char *helper_get_theme_path ( const char *file );
 #endif
 #endif

@@ -1,3 +1,30 @@
+/*
+ * rofi
+ *
+ * MIT/X11 License
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #ifndef ROFI_WIDGET_H
 #define ROFI_WIDGET_H
 #include <glib.h>
@@ -71,7 +98,7 @@ void widget_disable ( widget *widget );
 void widget_enable ( widget *widget );
 
 /**
- * @param widget tb  Handle to the widget
+ * @param widget widget  Handle to the widget
  * @param d The cairo object used to draw itself.
  *
  * Render the textbox.
@@ -79,11 +106,11 @@ void widget_enable ( widget *widget );
 void widget_draw ( widget *widget, cairo_t *d );
 
 /**
- * @param widget Handle to the widget
+ * @param wid Handle to the widget
  *
  * Free the widget and all allocated memory.
  */
-void widget_free ( widget *widget );
+void widget_free ( widget *wid );
 
 /**
  * @param widget The widget toresize
@@ -130,12 +157,12 @@ int widget_get_x_pos ( widget *widget );
  */
 void widget_update ( widget *widget );
 /**
- * @param widget The widget handle
+ * @param wid The widget handle
  *
  * Indicate that the widget needs to be redrawn.
  * This is done by setting the redraw flag on the toplevel widget.
  */
-void widget_queue_redraw ( widget *widget );
+void widget_queue_redraw ( widget *wid );
 /**
  * @param wid The widget handle
  *

@@ -1,8 +1,8 @@
-/**
+/*
  * rofi
  *
  * MIT/X11 License
- * Modified 2016-2017 Qball Cow <qball@gmpclient.org>
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,7 +22,10 @@
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
  */
+
+#define G_LOG_DOMAIN    "Widgets.Box"
 
 #include <config.h>
 #include <stdio.h>
@@ -30,8 +33,6 @@
 #include "widgets/widget-internal.h"
 #include "widgets/box.h"
 #include "theme.h"
-
-#define LOG_DOMAIN         "Widgets.Box"
 
 /** Default spacing used in the box*/
 #define DEFAULT_SPACING    2
@@ -118,7 +119,7 @@ static void vert_calculate_size ( box *b )
     }
     if ( b->max_size > rem_height ) {
         b->max_size = rem_height;
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Widgets to large (height) for box: %d %d", b->max_size, b->widget.h );
+        g_debug ( "Widgets to large (height) for box: %d %d", b->max_size, b->widget.h );
         return;
     }
     if ( active_widgets > 0 ) {
@@ -181,7 +182,7 @@ static void hori_calculate_size ( box *b )
     b->max_size += MAX ( 0, ( ( active_widgets - 1 ) * spacing ) );
     if ( b->max_size > ( rem_width ) ) {
         b->max_size = rem_width;
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Widgets to large (width) for box: %d %d", b->max_size, b->widget.w );
+        g_debug ( "Widgets to large (width) for box: %d %d", b->max_size, b->widget.w );
         return;
     }
     if ( active_widgets > 0 ) {
@@ -324,7 +325,7 @@ box * box_create ( const char *name, boxType type )
     b->widget.clicked            = box_clicked;
     b->widget.motion_notify      = box_motion_notify;
     b->widget.get_desired_height = box_get_desired_height;
-    b->widget.enabled            = TRUE;
+    b->widget.enabled            = rofi_theme_get_boolean ( WIDGET ( b ), "enabled", TRUE );
 
     b->spacing = rofi_theme_get_distance ( WIDGET ( b ), "spacing", DEFAULT_SPACING );
     return b;

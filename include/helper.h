@@ -1,3 +1,30 @@
+/*
+ * rofi
+ *
+ * MIT/X11 License
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #ifndef ROFI_HELPER_H
 #define ROFI_HELPER_H
 /**
@@ -181,7 +208,7 @@ unsigned int levenshtein ( const char *needle, const glong needlelen, const char
  *
  * @returns the converted UTF-8 string
  */
-char * rofi_force_utf8 ( gchar *data, ssize_t length );
+char * rofi_force_utf8 ( const gchar *data, ssize_t length );
 
 /**
  * @param input the char array holding latin text
@@ -217,7 +244,7 @@ int rofi_scorer_fuzzy_evaluate ( const char *pattern, glong plen, const char *st
  *          are found, respectively, to be less than, to match, or be greater than the first `n`
  *          characters (not bytes) of `b`.
  */
-int utf8_strncmp ( const char *a, const char* b, size_t n );
+int utf8_strncmp ( const char *a, const char* b, size_t n ) __attribute__((nonnull(1,2)));
 
 /**
  * @param wd The work directory (optional)

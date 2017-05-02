@@ -129,7 +129,8 @@ rofi_CFLAGS=\
 	-Werror=missing-prototypes\
 	-DSYSCONFDIR=\"$(sysconfdir)\"\
 	-DTHEME_CONVERTER\
-	-DPLUGIN_PATH=\"${libdir}/rofi\"
+	-DPLUGIN_PATH=\"${libdir}/rofi\"\
+	-DTHEME_DIR=\"$(themedir)\"
 
 rofi_LDADD=\
 	$(glib_LIBS)\
@@ -232,8 +233,12 @@ check_PROGRAMS+=\
 			   helper_config_cmdline_parser\
 			   widget_test\
 			   box_test\
-			   theme_parser_test\
 			   scrollbar_test
+
+if USE_CHECK
+check_PROGRAMS+=mode_test theme_parser_test
+endif
+
 
 
 history_test_CFLAGS=\
@@ -241,6 +246,8 @@ history_test_CFLAGS=\
 	$(glib_CFLAGS)\
 	$(libsn_CFLAGS)\
 	$(cairo_CFLAGS)\
+	-DTHEME_DIR=\"$(themedir)\"\
+	-DPLUGIN_PATH=\"${libdir}/rofi\"\
 	-I$(top_srcdir)/include/\
 	-I$(top_srcdir)/config/\
 	-I$(top_builddir)/
@@ -267,6 +274,8 @@ textbox_test_CFLAGS=\
 	$(cairo_CFLAGS)\
 	$(libsn_CFLAGS)\
 	$(librsvg_CFLAGS)\
+	-DPLUGIN_PATH=\"${libdir}/rofi\"\
+	-DTHEME_DIR=\"$(themedir)\"\
 	-I$(top_srcdir)/include/\
 	-I$(top_srcdir)/config/\
 	-I$(top_builddir)/
@@ -368,6 +377,9 @@ textbox_test_SOURCES=\
 	include/helper-theme.h\
 	test/textbox-test.c
 
+if USE_CHECK
+theme_parser_test_CFLAGS=${helper_test_CFLAGS} $(check_CFLAGS)
+theme_parser_test_LDADD=${helper_test_LDADD} $(check_LIBS)
 theme_parser_test_SOURCES=\
 	config/config.c\
 	include/rofi.h\
@@ -385,6 +397,7 @@ theme_parser_test_SOURCES=\
 	lexer/theme-parser.h\
 	source/theme.c\
 	test/theme-parser-test.c
+endif
 
 helper_test_SOURCES=\
 	config/config.c\
@@ -408,6 +421,8 @@ helper_test_CFLAGS=\
 	$(cairo_CFLAGS)\
 	$(librsvg_CFLAGS)\
 	$(libsn_CFLAGS)\
+	-DPLUGIN_PATH=\"${libdir}/rofi\"\
+	-DTHEME_DIR=\"$(themedir)\"\
 	-I$(top_srcdir)/include/\
 	-I$(top_srcdir)/config/\
 	-I$(top_builddir)/
@@ -420,8 +435,6 @@ helper_test_LDADD=\
 	$(librsvg_LIBS)\
 	$(cairo_LIBS)
 
-theme_parser_test_CFLAGS=${helper_test_CFLAGS}
-theme_parser_test_LDADD=${helper_test_LDADD}
 
 helper_expand_SOURCES=\
 	config/config.c\
@@ -456,7 +469,22 @@ helper_config_cmdline_parser_SOURCES=\
 	source/x11-helper.c\
 	test/helper-config-cmdline-parser.c
 
-TESTS+=\
+if USE_CHECK
+mode_test_CFLAGS=$(textbox_test_CFLAGS) $(check_CFLAGS)
+mode_test_LDADD=$(textbox_test_LDADD) $(check_LIBS)
+mode_test_SOURCES=\
+				  config/config.c\
+				  test/mode-test.c\
+			      source/dialogs/help-keys.c\
+				  source/helper.c\
+				  source/mode.c\
+				  source/xrmoptions.c\
+				  source/keyb.c\
+				  include/mode.h\
+				  include/mode-private.h
+endif
+
+TESTS=\
 	history_test\
 	helper_test\
 	helper_expand\
@@ -466,8 +494,12 @@ TESTS+=\
 	textbox_test\
 	widget_test\
 	box_test\
-	theme_parser_test\
 	scrollbar_test
+
+if USE_CHECK
+TESTS+=theme_parser_test\
+	mode_test
+endif
 
 .PHONY: test-x
 test-x: $(bin_PROGRAMS)

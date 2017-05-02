@@ -1,8 +1,8 @@
-/**
+/*
  * rofi
  *
  * MIT/X11 License
- * Modified 2016-2017 Qball Cow <qball@gmpclient.org>
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,7 +22,11 @@
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
  */
+
+/** The Rofi View log domain */
+#define G_LOG_DOMAIN    "View"
 
 #include <config.h>
 #include <stdio.h>
@@ -62,9 +66,6 @@
 #include "view-internal.h"
 
 #include "theme.h"
-
-/** The Rofi View log domain */
-#define LOG_DOMAIN    "View"
 
 #include "xcb.h"
 /**
@@ -172,24 +173,24 @@ static int lev_sort ( const void *p1, const void *p2, void *arg )
 /**
  * Stores a screenshot of Rofi at that point in time.
  */
-static void menu_capture_screenshot ( void )
+void rofi_capture_screenshot ( void )
 {
     const char *outp = g_getenv ( "ROFI_PNG_OUTPUT" );
     if ( CacheState.edit_surf == NULL ) {
         // Nothing to store.
-        fprintf ( stderr, "There is no rofi surface to store\n" );
+        g_warning ( "There is no rofi surface to store" );
         return;
     }
     const char *xdg_pict_dir = g_get_user_special_dir ( G_USER_DIRECTORY_PICTURES );
     if ( outp == NULL && xdg_pict_dir == NULL ) {
-        fprintf ( stderr, "XDG user picture directory or ROFI_PNG_OUTPUT is not set. Cannot store screenshot.\n" );
+        g_warning ( "XDG user picture directory or ROFI_PNG_OUTPUT is not set. Cannot store screenshot." );
         return;
     }
     // Get current time.
     GDateTime *now = g_date_time_new_now_local ();
     // Format filename.
     char      *timestmp = g_date_time_format ( now, "rofi-%Y-%m-%d-%H%M" );
-    char      *filename = g_strdup_printf ( "%s.png", timestmp );
+    char      *filename = g_strdup_printf ( "%s-%05d.png", timestmp, 0 );
     // Build full path
     char      *fpath = NULL;
     if ( outp == NULL ) {
@@ -201,7 +202,7 @@ static void menu_capture_screenshot ( void )
             // Try the next index.
             index++;
             // Format filename.
-            filename = g_strdup_printf ( "%s-%d.png", timestmp, index );
+            filename = g_strdup_printf ( "%s-%05d.png", timestmp, index );
             // Build full path
             fpath = g_build_filename ( xdg_pict_dir, filename, NULL );
         }
@@ -212,8 +213,8 @@ static void menu_capture_screenshot ( void )
     fprintf ( stderr, color_green "Storing screenshot %s\n"color_reset, fpath );
     cairo_status_t status = cairo_surface_write_to_png ( CacheState.edit_surf, fpath );
     if ( status != CAIRO_STATUS_SUCCESS ) {
-        fprintf ( stderr, "Failed to produce screenshot '%s', got error: '%s'\n", fpath,
-                  cairo_status_to_string ( status ) );
+        g_warning ( "Failed to produce screenshot '%s', got error: '%s'", fpath,
+                    cairo_status_to_string ( status ) );
     }
     g_free ( fpath );
     g_free ( filename );
@@ -228,7 +229,7 @@ static gboolean rofi_view_repaint ( G_GNUC_UNUSED void * data  )
         // After a resize the edit_pixmap surface might not contain anything anymore.
         // If we already re-painted, this does nothing.
         rofi_view_update ( current_active_menu, FALSE );
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "expose event" );
+        g_debug ( "expose event" );
         TICK_N ( "Expose" );
         xcb_copy_area ( xcb->connection, CacheState.edit_pixmap, CacheState.main_window, CacheState.gc,
                         0, 0, 0, 0, current_active_menu->width, current_active_menu->height );
@@ -369,7 +370,7 @@ static void rofi_view_window_update_size ( RofiViewState * state )
     CacheState.edit_surf = cairo_xcb_surface_create ( xcb->connection, CacheState.edit_pixmap, visual, state->width, state->height );
     CacheState.edit_draw = cairo_create ( CacheState.edit_surf );
 
-    g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Re-size window based internal request: %dx%d.", state->width, state->height );
+    g_debug ( "Re-size window based internal request: %dx%d.", state->width, state->height );
     // Should wrap main window in a widget.
     widget_resize ( WIDGET ( state->main_window ), state->width, state->height );
 }
@@ -412,7 +413,7 @@ void rofi_view_queue_redraw ( void  )
 {
     if ( current_active_menu && CacheState.repaint_source == 0 ) {
         CacheState.count++;
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "redraw %llu", CacheState.count );
+        g_debug ( "redraw %llu", CacheState.count );
         CacheState.repaint_source = g_idle_add_full (  G_PRIORITY_HIGH_IDLE, rofi_view_repaint, NULL, NULL );
     }
 }
@@ -434,13 +435,13 @@ void rofi_view_set_active ( RofiViewState *state )
         g_queue_push_head ( &( CacheState.views ), current_active_menu );
         // TODO check.
         current_active_menu = state;
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "stack view." );
+        g_debug ( "stack view." );
         rofi_view_window_update_size ( current_active_menu );
         rofi_view_queue_redraw ();
         return;
     }
     else if ( state == NULL && !g_queue_is_empty ( &( CacheState.views ) ) ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "pop view." );
+        g_debug ( "pop view." );
         current_active_menu = g_queue_pop_head ( &( CacheState.views ) );
         rofi_view_window_update_size ( current_active_menu );
         rofi_view_queue_redraw ();
@@ -607,7 +608,7 @@ static void rofi_view_setup_fake_transparency ( const char* const fake_backgroun
         }
         else {
             char *fpath = rofi_expand_path ( fake_background );
-            g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Opening %s to use as background.", fpath );
+            g_debug ( "Opening %s to use as background.", fpath );
             s                     = cairo_image_surface_create_from_png ( fpath );
             CacheState.fake_bgrel = TRUE;
             g_free ( fpath );
@@ -615,8 +616,8 @@ static void rofi_view_setup_fake_transparency ( const char* const fake_backgroun
         TICK_N ( "Get surface." );
         if ( s != NULL ) {
             if ( cairo_surface_status ( s ) != CAIRO_STATUS_SUCCESS ) {
-                g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Failed to open surface fake background: %s",
-                        cairo_status_to_string ( cairo_surface_status ( s ) ) );
+                g_debug ( "Failed to open surface fake background: %s",
+                          cairo_status_to_string ( cairo_surface_status ( s ) ) );
                 cairo_surface_destroy ( s );
                 s = NULL;
             }
@@ -702,14 +703,14 @@ void __create_window ( MenuFlags menu_flags )
             dpi = ( xcb->screen->height_in_pixels * 25.4 ) / (double) ( xcb->screen->height_in_millimeters );
         }
 
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Auto-detected DPI: %.2lf", dpi );
+        g_debug ( "Auto-detected DPI: %.2lf", dpi );
         PangoFontMap *font_map = pango_cairo_font_map_get_default ();
         pango_cairo_font_map_set_resolution ( (PangoCairoFontMap *) font_map, dpi );
     }
     // Setup font.
     // Dummy widget.
     container *win  = container_create ( "window.box" );
-    char      *font = rofi_theme_get_string ( WIDGET ( win ), "font", config.menu_font );
+    const char      *font = rofi_theme_get_string ( WIDGET ( win ), "font", config.menu_font );
     if ( font ) {
         PangoFontDescription *pfd = pango_font_description_from_string ( font );
         if ( helper_validate_font ( pfd, font ) ) {
@@ -758,7 +759,7 @@ void __create_window ( MenuFlags menu_flags )
     xcb_icccm_set_wm_class ( xcb->connection, box, sizeof ( wm_class_name ), wm_class_name );
 
     TICK_N ( "setup window name and class" );
-    char *transparency = rofi_theme_get_string ( WIDGET ( win ), "transparency", NULL );
+    const char *transparency = rofi_theme_get_string ( WIDGET ( win ), "transparency", NULL );
     if ( transparency ) {
         rofi_view_setup_fake_transparency ( transparency  );
     }
@@ -770,18 +771,18 @@ void __create_window ( MenuFlags menu_flags )
     TICK_N ( "done" );
 
     // Set the PID.
-    pid_t pid= getpid ();
-    xcb_ewmh_set_wm_pid (&(xcb->ewmh), CacheState.main_window, pid );
+    pid_t pid = getpid ();
+    xcb_ewmh_set_wm_pid ( &( xcb->ewmh ), CacheState.main_window, pid );
 
     // Get hostname
     const char *hostname = g_get_host_name ();
-    char *ahost = g_hostname_to_ascii ( hostname );
+    char       *ahost    = g_hostname_to_ascii ( hostname );
     if ( ahost != NULL ) {
-        xcb_icccm_set_wm_client_machine(xcb->connection,
-                CacheState.main_window,
-                XCB_ATOM_STRING, 8,
-                strlen(ahost), ahost);
-        g_free(ahost);
+        xcb_icccm_set_wm_client_machine ( xcb->connection,
+                                          CacheState.main_window,
+                                          XCB_ATOM_STRING, 8,
+                                          strlen ( ahost ), ahost );
+        g_free ( ahost );
     }
 }
 
@@ -939,7 +940,7 @@ void rofi_view_update ( RofiViewState *state, gboolean qr )
     if ( !widget_need_redraw ( WIDGET ( state->main_window ) ) ) {
         return;
     }
-    g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Redraw view" );
+    g_debug ( "Redraw view" );
     TICK ();
     cairo_t *d = CacheState.edit_draw;
     cairo_set_operator ( d, CAIRO_OPERATOR_SOURCE );
@@ -985,7 +986,7 @@ void rofi_view_update ( RofiViewState *state, gboolean qr )
 static void rofi_view_paste ( RofiViewState *state, xcb_selection_notify_event_t *xse )
 {
     if ( xse->property == XCB_ATOM_NONE ) {
-        fprintf ( stderr, "Failed to convert selection\n" );
+        g_warning ( "Failed to convert selection" );
     }
     else if ( xse->property == xcb->ewmh.UTF8_STRING ) {
         gchar *text = window_get_text_prop ( CacheState.main_window, xcb->ewmh.UTF8_STRING );
@@ -1006,7 +1007,7 @@ static void rofi_view_paste ( RofiViewState *state, xcb_selection_notify_event_t
         g_free ( text );
     }
     else {
-        fprintf ( stderr, "Failed\n" );
+        g_warning ( "Failed" );
     }
 }
 
@@ -1136,7 +1137,7 @@ static void rofi_view_refilter ( RofiViewState *state )
         state->height = height;
         rofi_view_calculate_window_position ( state );
         rofi_view_window_update_size ( state );
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Resize based on re-filter" );
+        g_debug ( "Resize based on re-filter" );
     }
     state->refilter = FALSE;
     TICK_N ( "Filter done" );
@@ -1171,7 +1172,7 @@ gboolean rofi_view_trigger_action ( RofiViewState *state, KeyBindingAction actio
         xcb_flush ( xcb->connection );
         break;
     case SCREENSHOT:
-        menu_capture_screenshot ( );
+        rofi_capture_screenshot ( );
         break;
     case TOGGLE_SORT:
         if ( state->case_indicator != NULL ) {
@@ -1423,13 +1424,13 @@ static void rofi_view_handle_keypress ( RofiViewState *state, xkb_stuff *xkb, xc
     }
 }
 
-void rofi_view_itterrate ( RofiViewState *state, xcb_generic_event_t *ev, xkb_stuff *xkb )
+void rofi_view_itterrate ( RofiViewState *state, xcb_generic_event_t *event, xkb_stuff *xkb )
 {
-    switch ( ev->response_type & ~0x80 )
+    switch ( event->response_type & ~0x80 )
     {
     case XCB_CONFIGURE_NOTIFY:
     {
-        xcb_configure_notify_event_t *xce = (xcb_configure_notify_event_t *) ev;
+        xcb_configure_notify_event_t *xce = (xcb_configure_notify_event_t *) event;
         if ( xce->window == CacheState.main_window ) {
             if ( state->x != xce->x || state->y != xce->y ) {
                 state->x = xce->x;
@@ -1450,7 +1451,7 @@ void rofi_view_itterrate ( RofiViewState *state, xcb_generic_event_t *ev, xkb_st
 
                 CacheState.edit_surf = cairo_xcb_surface_create ( xcb->connection, CacheState.edit_pixmap, visual, state->width, state->height );
                 CacheState.edit_draw = cairo_create ( CacheState.edit_surf );
-                g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Re-size window based external request: %d %d\n", state->width, state->height );
+                g_debug ( "Re-size window based external request: %d %d", state->width, state->height );
                 widget_resize ( WIDGET ( state->main_window ), state->width, state->height );
             }
         }
@@ -1461,19 +1462,19 @@ void rofi_view_itterrate ( RofiViewState *state, xcb_generic_event_t *ev, xkb_st
         if ( config.click_to_exit == TRUE ) {
             state->mouse_seen = TRUE;
         }
-        xcb_motion_notify_event_t xme = *( (xcb_motion_notify_event_t *) ev );
+        xcb_motion_notify_event_t xme = *( (xcb_motion_notify_event_t *) event );
         if ( widget_motion_notify ( WIDGET ( state->main_window ), &xme ) ) {
             return;
         }
         break;
     }
     case XCB_BUTTON_PRESS:
-        rofi_view_mouse_navigation ( state, (xcb_button_press_event_t *) ev );
+        rofi_view_mouse_navigation ( state, (xcb_button_press_event_t *) event );
         break;
     case XCB_BUTTON_RELEASE:
         if ( config.click_to_exit == TRUE ) {
             if ( ( CacheState.flags & MENU_NORMAL_WINDOW ) == 0 ) {
-                xcb_button_release_event_t *bre = (xcb_button_release_event_t *) ev;
+                xcb_button_release_event_t *bre = (xcb_button_release_event_t *) event;
                 if ( ( state->mouse_seen == FALSE ) && ( bre->event != CacheState.main_window ) ) {
                     state->quit = TRUE;
                     state->retv = MENU_CANCEL;
@@ -1484,11 +1485,11 @@ void rofi_view_itterrate ( RofiViewState *state, xcb_generic_event_t *ev, xkb_st
         break;
     // Paste event.
     case XCB_SELECTION_NOTIFY:
-        rofi_view_paste ( state, (xcb_selection_notify_event_t *) ev );
+        rofi_view_paste ( state, (xcb_selection_notify_event_t *) event );
         break;
     case XCB_KEYMAP_NOTIFY:
     {
-        xcb_keymap_notify_event_t *kne     = (xcb_keymap_notify_event_t *) ev;
+        xcb_keymap_notify_event_t *kne     = (xcb_keymap_notify_event_t *) event;
         guint                     modstate = x11_get_current_mask ( xkb );
         for ( gint32 by = 0; by < 31; ++by ) {
             for ( gint8 bi = 0; bi < 7; ++bi ) {
@@ -1502,11 +1503,11 @@ void rofi_view_itterrate ( RofiViewState *state, xcb_generic_event_t *ev, xkb_st
         break;
     }
     case XCB_KEY_PRESS:
-        rofi_view_handle_keypress ( state, xkb, (xcb_key_press_event_t *) ev );
+        rofi_view_handle_keypress ( state, xkb, (xcb_key_press_event_t *) event );
         break;
     case XCB_KEY_RELEASE:
     {
-        xcb_key_release_event_t *xkre    = (xcb_key_release_event_t *) ev;
+        xcb_key_release_event_t *xkre    = (xcb_key_release_event_t *) event;
         unsigned int            modstate = x11_canonalize_mask ( xkre->state );
         if ( modstate == 0 ) {
             abe_trigger_release ( );
@@ -1522,7 +1523,7 @@ void rofi_view_itterrate ( RofiViewState *state, xcb_generic_event_t *ev, xkb_st
     }
     rofi_view_update ( state, TRUE );
 
-    if ( ( ev->response_type & ~0x80 ) == XCB_EXPOSE && CacheState.repaint_source == 0 ) {
+    if ( ( event->response_type & ~0x80 ) == XCB_EXPOSE && CacheState.repaint_source == 0 ) {
         CacheState.repaint_source = g_idle_add_full (  G_PRIORITY_HIGH_IDLE, rofi_view_repaint, NULL, NULL );
     }
 }
@@ -1741,7 +1742,7 @@ void rofi_view_hide ( void )
 
 void rofi_view_cleanup ()
 {
-    g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Cleanup." );
+    g_debug ( "Cleanup." );
     if ( CacheState.idle_timeout > 0 ) {
         g_source_remove ( CacheState.idle_timeout );
         CacheState.idle_timeout = 0;
@@ -1763,7 +1764,7 @@ void rofi_view_cleanup ()
         CacheState.edit_surf = NULL;
     }
     if ( CacheState.main_window != XCB_WINDOW_NONE ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Unmapping and free'ing window" );
+        g_debug ( "Unmapping and free'ing window" );
         xcb_unmap_window ( xcb->connection, CacheState.main_window );
         xcb_free_gc ( xcb->connection, CacheState.gc );
         xcb_free_pixmap ( xcb->connection, CacheState.edit_pixmap );
@@ -1798,7 +1799,7 @@ void rofi_view_workers_initialize ( void )
     }
     // If error occured during setup of pool, tell user and exit.
     if ( error != NULL ) {
-        fprintf ( stderr, "Failed to setup thread pool: '%s'", error->message );
+        g_warning ( "Failed to setup thread pool: '%s'", error->message );
         g_error_free ( error );
         exit ( EXIT_FAILURE );
     }

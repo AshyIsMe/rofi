@@ -39,6 +39,8 @@ addons:
             - lcov
             - doxygen
             - graphviz
+            - texinfo
+            - texi2html
 
 compiler:
     - gcc
@@ -53,12 +55,19 @@ before_install:
 # TODO: We install xkbcommon here, until Travis use an up-to-date enough Ubuntu
 # TODO: We install libxcb-ewmh-dev here, until it is whitelisted again in Travis
 install:
-    - sudo apt-get install -y --force-yes libxkbcommon-dev libxkbcommon-x11-dev libxcb-ewmh-dev flex/trusty-backports
+    - sudo apt-get install -y --force-yes libxkbcommon-dev libxkbcommon-x11-dev libxcb-ewmh-dev flex/trusty-backports libfl-dev/trusty-backports 
 
 before_script:
     - git clone --recursive https://github.com/Airblader/xcb-util-xrm.git
     - cd xcb-util-xrm 
     - ./autogen.sh --prefix=/usr
+    - make
+    - sudo make install
+    - cd -
+    - git clone https://github.com/libcheck/check/ -b 0.11.0
+    - cd check
+    - autoreconf -i
+    - TEX="false" ./configure --prefix=/usr/
     - make
     - sudo make install
     - cd -
@@ -77,7 +86,7 @@ script:
       #    - gcov source/rofi.c
     - make distcheck
     - git clone https://github.com/alobbs/doxy-coverage
-    - make doxy 2>&1 | tee doxygen.log 
+    - make doxy 2>&1 > doxygen.log
     - test $(grep -c warning doxygen.log) -eq 0
     - ./doxy-coverage/doxy-coverage.py doc/html/xml/
 

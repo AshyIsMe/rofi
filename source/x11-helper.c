@@ -1,9 +1,9 @@
-/**
+/*
  * rofi
  *
  * MIT/X11 License
- * Copyright (c) 2012 Sean Pringle <sean.pringle@gmail.com>
- * Modified 2013-2017 Qball Cow <qball@gmpclient.org>
+ * Copyright © 2012 Sean Pringle <sean.pringle@gmail.com>
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -25,6 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+
+/** Log domain for this module */
+#define G_LOG_DOMAIN    "X11Helper"
+
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,10 +56,6 @@
 #define INTERSECT( x, y, x1, y1, w1, h1 )    ( ( ( ( x ) >= ( x1 ) ) && ( ( x ) < ( x1 + w1 ) ) ) && ( ( ( y ) >= ( y1 ) ) && ( ( y ) < ( y1 + h1 ) ) ) )
 #include "x11-helper.h"
 #include "xkb-internal.h"
-
-/** Log domain for this module */
-#define LOG_DOMAIN    "X11Helper"
-
 WindowManager current_window_manager = WM_EWHM;
 
 /**
@@ -310,14 +310,14 @@ void x11_build_monitor_layout ()
     if ( !x11_is_extension_present ( "RANDR" ) ) {
         // Check if xinerama is available.
         if ( x11_is_extension_present ( "XINERAMA" ) ) {
-            g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Query XINERAMA for monitor layout." );
+            g_debug ( "Query XINERAMA for monitor layout." );
             x11_build_monitor_layout_xinerama ();
             return;
         }
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "No RANDR or Xinerama available for getting monitor layout." );
+        g_debug ( "No RANDR or Xinerama available for getting monitor layout." );
         return;
     }
-    g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Query RANDR for monitor layout." );
+    g_debug ( "Query RANDR for monitor layout." );
 
     xcb_randr_get_screen_resources_current_reply_t  *res_reply;
     xcb_randr_get_screen_resources_current_cookie_t src;
@@ -514,7 +514,7 @@ static int monitor_active_from_id ( int mon_id, workarea *mon )
         // This is our give up point.
         return FALSE;
     }
-    g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Failed to find monitor, fall back to monitor showing mouse." );
+    g_debug ( "Failed to find monitor, fall back to monitor showing mouse." );
     return monitor_active_from_id ( -5, mon );
 }
 
@@ -546,7 +546,7 @@ int monitor_active ( workarea *mon )
             if ( monitor_get_dimension ( mon_id, mon ) ) {
                 return TRUE;
             }
-            fprintf ( stderr, "Failed to find selected monitor.\n" );
+            g_warning ( "Failed to find selected monitor." );
         }
         else {
             return monitor_active_from_id ( mon_id, mon );
@@ -561,7 +561,7 @@ int take_pointer ( xcb_window_t w, int iters )
     int i = 0;
     while ( TRUE ) {
         if ( xcb_connection_has_error ( xcb->connection ) ) {
-            fprintf ( stderr, "Connection has error\n" );
+            g_warning ( "Connection has error" );
             exit ( EXIT_FAILURE );
         }
         xcb_grab_pointer_cookie_t cc = xcb_grab_pointer ( xcb->connection, 1, w, XCB_EVENT_MASK_BUTTON_RELEASE,
@@ -586,7 +586,7 @@ int take_keyboard ( xcb_window_t w, int iters )
     int i = 0;
     while ( TRUE ) {
         if ( xcb_connection_has_error ( xcb->connection ) ) {
-            fprintf ( stderr, "Connection has error\n" );
+            g_warning ( "Connection has error" );
             exit ( EXIT_FAILURE );
         }
         xcb_grab_keyboard_cookie_t cc = xcb_grab_keyboard ( xcb->connection,
@@ -839,7 +839,7 @@ xcb_window_t xcb_stuff_get_root_window ( xcb_stuff *xcb )
 void xcb_stuff_wipe ( xcb_stuff *xcb )
 {
     if ( xcb->connection != NULL ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Cleaning up XCB and XKB" );
+        g_debug ( "Cleaning up XCB and XKB" );
         if ( xcb->sncontext != NULL ) {
             sn_launchee_context_unref ( xcb->sncontext );
             xcb->sncontext = NULL;
@@ -895,7 +895,7 @@ void x11_helper_discover_window_manager ( void )
         xcb_get_property_cookie_t         cookie = xcb_ewmh_get_wm_name_unchecked ( &( xcb->ewmh ), wm_win );
         if (  xcb_ewmh_get_wm_name_reply ( &( xcb->ewmh ), cookie, &wtitle, (void *) 0 ) ) {
             if ( wtitle.strings_len > 0 ) {
-                g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Found window manager: %s", wtitle.strings );
+                g_debug ( "Found window manager: %s", wtitle.strings );
                 if ( g_strcmp0 ( wtitle.strings, "i3" ) == 0 ) {
                     current_window_manager = WM_I3;
                 }

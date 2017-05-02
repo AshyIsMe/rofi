@@ -1,8 +1,8 @@
-/**
+/*
  * rofi
  *
  * MIT/X11 License
- * Copyright 2013-2017 Qball Cow <qball@gmpclient.org>
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -24,6 +24,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+
+#define G_LOG_DOMAIN    "Dialogs.Script"
 
 #include <config.h>
 #include <stdio.h>
@@ -66,8 +68,8 @@ static char **get_script_output ( const char *command, unsigned int *length )
                 free ( buffer );
             }
             if ( fclose ( inp ) != 0 ) {
-                fprintf ( stderr, "Failed to close stdout off executor script: '%s'\n",
-                          strerror ( errno ) );
+                g_warning ( "Failed to close stdout off executor script: '%s'",
+                            g_strerror ( errno ) );
             }
         }
     }
@@ -89,6 +91,7 @@ static void script_switcher_free ( Mode *sw )
     if ( sw == NULL ) {
         return;
     }
+    g_free ( sw->name );
     g_free ( sw->ed );
     g_free ( sw );
 }
@@ -180,7 +183,7 @@ Mode *script_switcher_parse_setup ( const char *str )
     const char *const sep    = ":";
     for ( char *token = strtok_r ( parse, sep, &endp ); token != NULL; token = strtok_r ( NULL, sep, &endp ) ) {
         if ( index == 0 ) {
-            g_strlcpy ( sw->name, token, 32 );
+            sw->name = g_strdup ( token );
         }
         else if ( index == 1 ) {
             sw->ed = (void *) rofi_expand_path ( token );
@@ -201,7 +204,12 @@ Mode *script_switcher_parse_setup ( const char *str )
 
         return sw;
     }
-    fprintf ( stderr, "The script command '%s' has %u options, but needs 2: <name>:<script>.\n", str, index );
+    fprintf ( stderr, "The script command '%s' has %u options, but needs 2: <name>:<script>.", str, index );
     script_switcher_free ( sw );
     return NULL;
+}
+
+gboolean script_switcher_is_valid ( const char *token )
+{
+    return strchr ( token, ':' ) != NULL;
 }

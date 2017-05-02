@@ -1,8 +1,8 @@
-/**
+/*
  * rofi
  *
  * MIT/X11 License
- * Copyright 2013-2017 Qball Cow <qball@gmpclient.org>
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -24,6 +24,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+
+#define G_LOG_DOMAIN    "Dialogs.DRun"
+
 #include <config.h>
 #ifdef ENABLE_DRUN
 #include <stdlib.h>
@@ -49,7 +52,6 @@
 #include "nkutils-xdg-theme.h"
 
 #define DRUN_CACHE_FILE    "rofi2.druncache"
-#define LOG_DOMAIN         "Dialogs.DRun"
 
 #define GET_CAT_PARSE_TIME
 
@@ -154,24 +156,24 @@ static void exec_cmd_entry ( DRunModeEntry *e )
     GError *error = NULL;
     GRegex *reg   = g_regex_new ( "%[a-zA-Z]", 0, 0, &error );
     if ( error != NULL ) {
-        fprintf ( stderr, "Internal error, failed to create regex: %s.\n", error->message );
+        g_warning ( "Internal error, failed to create regex: %s.", error->message );
         g_error_free ( error );
         return;
     }
     struct RegexEvalArg earg = { .e = e, .success = TRUE };
     char                *str = g_regex_replace_eval ( reg, e->exec, -1, 0, 0, drun_helper_eval_cb, &earg, &error );
     if ( error != NULL ) {
-        fprintf ( stderr, "Internal error, failed replace field codes: %s.\n", error->message );
+        g_warning ( "Internal error, failed replace field codes: %s.", error->message );
         g_error_free ( error );
         return;
     }
     g_regex_unref ( reg );
     if ( earg.success == FALSE ) {
-        fprintf ( stderr, "Invalid field code in Exec line: %s.\n", e->exec );;
+        g_warning ( "Invalid field code in Exec line: %s.", e->exec );;
         return;
     }
     if ( str == NULL ) {
-        fprintf ( stderr, "Nothing to execute after processing: %s.\n", e->exec );;
+        g_warning ( "Nothing to execute after processing: %s.", e->exec );;
         return;
     }
     gchar *fp        = rofi_expand_path ( g_strstrip ( str ) );
@@ -213,7 +215,7 @@ static gboolean read_desktop_file ( DRunModePrivateData *pd, const char *root, c
 
     // Check if item is on disabled list.
     if ( g_hash_table_contains ( pd->disabled_entries, id ) ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Skipping: %s, was previously seen.", id );
+        g_debug ( "Skipping: %s, was previously seen.", id );
         return TRUE;
     }
     GKeyFile *kf    = g_key_file_new ();
@@ -221,7 +223,7 @@ static gboolean read_desktop_file ( DRunModePrivateData *pd, const char *root, c
     g_key_file_load_from_file ( kf, path, 0, &error );
     // If error, skip to next entry
     if ( error != NULL ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Failed to parse desktop file: %s because: %s", path, error->message );
+        g_debug ( "Failed to parse desktop file: %s because: %s", path, error->message );
         g_error_free ( error );
         g_key_file_free ( kf );
         return FALSE;
@@ -230,12 +232,12 @@ static gboolean read_desktop_file ( DRunModePrivateData *pd, const char *root, c
     gchar *key = g_key_file_get_string ( kf, "Desktop Entry", "Type", NULL );
     if ( key == NULL ) {
         // No type? ignore.
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Skipping desktop file: %s because: No type indicated", path );
+        g_debug ( "Skipping desktop file: %s because: No type indicated", path );
         g_key_file_free ( kf );
         return FALSE;
     }
     if ( g_strcmp0 ( key, "Application" ) ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Skipping desktop file: %s because: Not of type application (%s)", path, key );
+        g_debug ( "Skipping desktop file: %s because: Not of type application (%s)", path, key );
         g_free ( key );
         g_key_file_free ( kf );
         return FALSE;
@@ -244,28 +246,28 @@ static gboolean read_desktop_file ( DRunModePrivateData *pd, const char *root, c
 
     // Name key is required.
     if ( !g_key_file_has_key ( kf, "Desktop Entry", "Name", NULL ) ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Invalid DesktopFile: '%s', no 'Name' key present.\n", path );
+        g_debug ( "Invalid DesktopFile: '%s', no 'Name' key present.", path );
         g_key_file_free ( kf );
         return FALSE;
     }
 
     // Skip hidden entries.
     if ( g_key_file_get_boolean ( kf, "Desktop Entry", "Hidden", NULL ) ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Adding desktop file: %s to disabled list because: Hdden", path );
+        g_debug ( "Adding desktop file: %s to disabled list because: Hdden", path );
         g_key_file_free ( kf );
         g_hash_table_add ( pd->disabled_entries, g_strdup ( id ) );
         return FALSE;
     }
     // Skip entries that have NoDisplay set.
     if ( g_key_file_get_boolean ( kf, "Desktop Entry", "NoDisplay", NULL ) ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Adding desktop file: %s to disabled list because: NoDisplay", path );
+        g_debug ( "Adding desktop file: %s to disabled list because: NoDisplay", path );
         g_key_file_free ( kf );
         g_hash_table_add ( pd->disabled_entries, g_strdup ( id ) );
         return FALSE;
     }
     // We need Exec, don't support DBusActivatable
     if ( !g_key_file_has_key ( kf, "Desktop Entry", "Exec", NULL ) ) {
-        g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Unsupported DesktopFile: '%s', no 'Exec' key present.\n", path );
+        g_debug ( "Unsupported DesktopFile: '%s', no 'Exec' key present.", path );
         g_key_file_free ( kf );
         return FALSE;
     }
@@ -304,7 +306,7 @@ static void walk_dir ( DRunModePrivateData *pd, const char *root, const char *di
 {
     DIR *dir;
 
-    g_log ( LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Checking directory %s for desktop files.", root );
+    g_debug ( "Checking directory %s for desktop files.", root );
     dir = opendir ( dirname );
     if ( dir == NULL ) {
         return;

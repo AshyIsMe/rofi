@@ -1,3 +1,30 @@
+/*
+ * rofi
+ *
+ * MIT/X11 License
+ * Copyright © 2013-2017 Qball Cow <qball@gmpclient.org>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #include <assert.h>
 #include <locale.h>
 #include <glib.h>
@@ -21,6 +48,14 @@ struct xcb_stuff *xcb;
             printf ( "Test %i passed (%s == %s) (%u == %u)\n", ++test, # a, # b, a, b ); \
         }else {                                                                          \
             printf ( "Test %i failed (%s == %s) (%u != %u)\n", ++test, # a, # b, a, b ); \
+            abort ( );                                                                   \
+        }                                                                                \
+}
+#define TASSERTL( a, b )    {                                                            \
+        if ( ( a ) == ( b ) ) {                                                          \
+            printf ( "Test %i passed (%s == %s) (%d == %d)\n", ++test, # a, # b, a, b ); \
+        }else {                                                                          \
+            printf ( "Test %i failed (%s == %s) (%d != %d)\n", ++test, # a, # b, a, b ); \
             abort ( );                                                                   \
         }                                                                                \
 }
@@ -117,5 +152,24 @@ int main ( int argc, char ** argv )
         fd = create_pid_file ( path );
         TASSERT ( fd >= 0 );
         remove_pid_file ( fd );
+    }
+    {
+        TASSERT ( utf8_strncmp ( "aapno", "aap€",3) == 0 );
+        TASSERT ( utf8_strncmp ( "aapno", "aap€",4) != 0 );
+        TASSERT ( utf8_strncmp ( "aapno", "a",4) != 0 );
+        TASSERT ( utf8_strncmp ( "a", "aap€",4) != 0 );
+//        char in[] = "Valid utf8 until \xc3\x28 we continue here";
+//        TASSERT ( utf8_strncmp ( in, "Valid", 3 ) == 0);
+    }
+    {
+        TASSERTL ( rofi_scorer_fuzzy_evaluate ("aap noot mies", 12 , "aap noot mies", 12), -605);
+        TASSERTL ( rofi_scorer_fuzzy_evaluate ("anm", 3, "aap noot mies", 12), -155);
+        TASSERTL ( rofi_scorer_fuzzy_evaluate ("blu", 3, "aap noot mies", 12), 1073741824);
+        config.case_sensitive = TRUE;
+        TASSERTL ( rofi_scorer_fuzzy_evaluate ("Anm", 3, "aap noot mies", 12), 1073741754);
+        config.case_sensitive = FALSE;
+        TASSERTL ( rofi_scorer_fuzzy_evaluate ("Anm", 3, "aap noot mies", 12), -155);
+        TASSERTL ( rofi_scorer_fuzzy_evaluate ("aap noot mies", 12,"Anm", 3 ), 1073741824);
+
     }
 }
